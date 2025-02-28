@@ -1,0 +1,127 @@
+---
+title: "Project Step 3"
+author: Sara Chong
+output: md_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(modelr)
+library(faraway)
+library(skimr)
+library(tinytex)
+library(ggplot2)
+library(dplyr)
+library(GGally)
+library(broom)
+```
+
+## Descriptor  
+
+The California House Pricing Dataset from Kaggle encapsulates a snapshot of houses within specific Californian blocks as recorded during the 1990 census. The dataset encompasses a range of attributes that define these housing units. In this step of our analysis, we will be attempting to further dissect our multiple linear model that we previously built by applying shrinkage methods to our model. In multiple linear regression, the purpose of the techniques of specific shrinkage methods is to counteract the inaccuracies of multicollinearity and model overfitting. In order to accomplish this, we will randomly sample 500 observations from the data and fit them to our model and execute ridge regression and LASSO regression techniques to better fit our multiple linear model. 
+
+```{r initilization, echo=FALSE}
+complete_housing_dataset<-read_csv('housing.csv', show_col_types = FALSE)
+set.seed(10)
+hdr<- sample(1:nrow(complete_housing_dataset), 500, replace=FALSE)
+data_sample <- complete_housing_dataset[hdr,]
+data_sample <- data_sample[complete.cases(data_sample), ]
+```
+
+```{r first_step, echo=FALSE, comment= NULL}
+lmod <- lm(population ~ housing_median_age + total_rooms + total_bedrooms + households + median_income + median_house_value, data = data_sample)
+# Coefficients
+summary(lmod)$coefficients
+# R.squared
+cat("R^2 of the basic model:",summary(lmod)$r.squared )
+
+```
+
+
+```{r eigen_decomp, echo=TRUE, comment = NULL}
+x <- model.matrix(lmod)[,-1]
+lambda <- eigen(crossprod(x))$val;
+sqrt(lambda[1]/lambda)
+
+# Calculating R^2 for all the predictors
+r2<-rep(0,dim(x)[2])
+for(k in 1:(length(r2))){r2[k]<-summary(lm(x[,k] ~ x[,-k]))$r.squared};r2
+```
+Now check for the variance inflation factors:
+```{r var_inflation_factors, echo = TRUE, comment = NULL}
+vif(x)
+#Removing highly correlated variables
+lmod_2 <- lm(population ~ total_rooms + total_bedrooms + households, data = data_sample)
+cat("R-Squared of the new model:", summary(lmod_2)$r.squared)
+```
+
+## Ridge Regression
+
+The main assumption of ridge regression is that after normalization, the regression coefficients should not be too large. 
+
+
+```{r RR, echo=FALSE, comment = NULL, message = FALSE}
+require(MASS)
+par(mar = c(2,2,0.5,0.5))
+data_sample_2 <- data_sample[,c("population","housing_median_age","total_rooms","total_bedrooms","households", "median_income","median_house_value")]
+data_sample_2 <- scale((data_sample_2), center = TRUE, scale = FALSE)
+data_sample_2 <- as.data.frame(data_sample_2)
+rg_mod <- lm.ridge(population ~ housing_median_age + total_rooms + total_bedrooms + households + median_income + median_house_value, data=data_sample_2, lambda = seq(0,100, len =100))
+```
+
+```{r graph, echo = FALSE, out.width="100%", fig.align="center", fig.show='hold', fig.cap="Figure Demonstrating the Lambda versus Beta Hat"}
+matplot(rg_mod$lambda, coef(rg_mod), type='l', xlab='Lambda',ylab='Beta Hat', cex = 0.8)
+```
+
+
+```{r gen_cross, echo=FALSE, comment = NULL}
+# Generalized crossvalidation
+a <- which.min(rg_mod$GCV);
+cat('Generalized crossvalidation value: ', a)
+```
+
+
+```{r, coef_rgmod, echo=FALSE, comment = NULL}
+RR_coef<-sprintf("%.2e", coef(rg_mod)[a,])
+cat("Intercept:", RR_coef[1])
+cat("housing_median_age:", RR_coef[2])
+cat("total_rooms:", RR_coef[3])
+cat("total_bedrooms:", RR_coef[4])
+cat("households:", RR_coef[5])
+cat("median_income:", RR_coef[6])
+cat("median_house_value:", RR_coef[7])
+
+
+```
+
+## Lasso Regression
+
+```{r LASSO, echo = FALSE, comment = NULL, warning=FALSE, message = FALSE}
+require(glmnet)
+data_sample_3 <- data_sample[,c("population","housing_median_age","total_rooms","total_bedrooms","households", "median_income","median_house_value")]
+y <- data_sample_3$population
+x <- scale(data.matrix(data_sample_3[,-1]))
+cv_model <- cv.glmnet(x,y,alpha = 1)
+best_lambda <- cv_model$lambda.min
+cat("Best Lambda for our Models:", best_lambda)
+```
+
+
+```{r MSEvLOGLAMBDA, echo = FALSE, out.width="45%", fig.align="center", fig.show='hold', fig.cap="Figure Demonstrating the Log of each Lambda versus MSE"}
+par(mar = c(7,4,2.2,0.5));plot(cv_model, cex=0.8)
+```
+
+```{r coeff_best, echo = FALSE, comment = NULL, warning=FALSE, message=FALSE}
+# Outputting the coefficients of the best model using the best lambda.
+best_model <- glmnet(x,y,alpha =1, lambda = best_lambda)
+cat('Best Model Coefficients:')
+coef(best_model)
+```
+
+```{r scaled_obs, comment = NULL}
+# Outputting the prediction of an population estimate using scaled explanatory variables
+new = matrix(c(.2,.04,.4,.4,-.3,4), nrow=1, ncol=6)
+cat("Predicted value of Population given the scaled variable values above:",predict(best_model, s=best_lambda, newx=new))
+
+```

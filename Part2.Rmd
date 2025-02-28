@@ -1,0 +1,89 @@
+---
+title: "Project Step 2"
+author: Sara Chong
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(modelr)
+library(faraway)
+library(skimr)
+library(tinytex)
+library(ggplot2)
+library(broom)
+options(scipen = 999)
+```
+
+## Descriptor  
+
+The California House Pricing Dataset from Kaggle encapsulates a snapshot of houses within specific Californian blocks as recorded during the 1990 census. The dataset encompasses a range of attributes that define these housing units, and we focus on two key variables: total rooms and total bedrooms for each housing block. These variables of interest offer valuable insights into the dynamics of the housing market in California. As we explore this dataset, we aim to understand if there is an association between the total number of rooms and the total number of bedrooms within the average California block, and whether their association is linear.
+
+To begin the analysis of the data, we must take take a look at the formula for simple linear regression: $$Y = \beta_0 + \beta_1x + \epsilon$$ In this model,$Y$ represents the response variable which is the total number of bedrooms. $x$ represents the explanatory variable which is the total number of rooms. $\beta_0$ represents the intercept of the regression line in the model, or what the value of the response variable would be if the explanatory variable was set to zero. $\beta_1$ represents the slope of the regression line which demonstrates how the dependent variable changes with each unit change of the explanatory variable. $\epsilon$ is the error term which represents the difference between the actual values and the predicted values of the response variable. With this knowledge as a foundation, we can formulate our null and rejection hypothesises for our data:
+$$H_O: \beta_1 = 0\:(Total\:rooms\:and\:total\:bedrooms\:do\:not\:have\:a\:linear\:correlation)$$
+$$H_1: \beta_1 \ne 0\:(Total\:rooms\:and\:total\:bedrooms\:have\:a\:positive/negative\:linear\:correlation)$$
+
+Now, we must begin to test our data to see if it follows the four assumptions for simple linear regression: linearity, constant variability, independence and normality of errors, and homoscedasticity. First, we can plot our two variables against each other and visually observe if there is a seemingly linear trend between the data.
+\newpage
+
+```{r initilization, echo=FALSE}
+complete_housing_dataset<-read_csv('housing.csv', show_col_types = FALSE)
+set.seed(1)
+hdr<- sample(1:nrow(complete_housing_dataset), 500, replace=FALSE)
+data_sample <- complete_housing_dataset[hdr,]
+```
+
+```{r checks, echo=FALSE, out.width="50%", fig.align='center',fig.cap ='Plots the total number of rooms against the total number of bedrooms in a given block in California'}
+plot(data_sample$total_rooms, data_sample$total_bedrooms, 
+     xlab = "Total Numberof Rooms within a Block", ylab = "Total Number of Bedrooms within a Block",main="Total Number of Rooms vs Total Number of Bedrooms")
+lin_reg_model <- lm(total_bedrooms ~ total_rooms, data = data_sample)
+abline(lin_reg_model, col = "red")
+```
+As shown above in Figure 1, the association between the total number of rooms and the total number of bedrooms seemingly having positive slope linear relationship. We can assume this because of the linear regression line following has a positive slope that coincides quite closely with the data. Next, we can utilize checks to see if the following assumptions also apply to our data.
+
+```{r constant_variance_errors, echo=FALSE, out.width="50%"}
+residuals <- residuals(lin_reg_model)
+plot(predict(lin_reg_model), residuals, main="Predicted Values of Total Bedrooms vs Residuals", xlab="Predicted Values", ylab="Residuals")
+qqnorm(residuals)
+qqline(residuals)
+```
+**Figure 2:** Predicted Values of Total Bedrooms vs Residuals **Figure 3:** Q-Q Plot of Normal Errors
+\newline
+
+Figures 2 plots the predicted values of the response variable against the residuals. From this, we can notice how a density band travels in a straight line across the plot. In the lower domain of the x-axis, the data is densely clustered together, suggesting that the variance of the data in this range is constant. Additionally, this can inform us that there is likelihood that the total number of rooms indeed has a linear correlation with total number of bedrooms. Because the data is more centralized when the predicted values are 1000 or less, it could mean that total number of rooms is a greater determinant of the total number of bedrooms when the total number of rooms is less than 1000, and perhaps other variables become more influential in determining the total of the response variable as the total number of rooms increases. Meanwhile, the Q-Q plot of the data in Figure 3 demonstrates a linear trend of the residuals. This means that, under the assumptions of the linear regression model, we can indeed assume that the errors are normally distributed.
+\newpage
+```{r homoscedasticity, eval=FALSE, echo=FALSE}
+library(car)
+ncvTest(lin_reg_model)
+```
+
+```{r summary, echo=FALSE, out.width="50%"}
+summary(lin_reg_model)
+```
+The above data outlines the summary of the linear regression model for the variables of total rooms against total bedrooms. From the given stats, we can deduce that the response variable, $Y$, increases by 0.18428 units for ever unit increase of the explanatory variable, $x$, given the error is less than 5%. Additionally, the $R^2$ value is equal to 0.8235. This is pivotal as it means that the explanatory variable can explain 82.35% of the change in the response variable. Additionally, the shown p-value of the linear regression model is less than $2.2 \times 10^{-16}$. Together, the elements of the linear regression model demonstrate that we can assume that the explanatory variable, the total number of rooms, has a significant affect on the response variable, the total number of bedrooms. Therefore, we reject the null hypothesis that $\beta_1 = 0$.
+```{r confint_analysis, echo=FALSE}
+confint(lin_reg_model)
+```
+In addition to this, the above command gives the confidence interval for the coefficient of the explanatory variable, $\beta_1$, which is (0.17675, 0.19180).
+
+Next, we analyze our data based on an interesting value of the independent variable. Looking at Figure 1, we can see a dense distribution of observations where the value of total rooms is equal to 2500, so lets select that as our interesting value to look into. 
+
+```{r interesting_value, echo=FALSE, error=FALSE}
+x_interesting <- 2500
+new_data <- data.frame(total_rooms = x_interesting)
+individual_ci <- predict(lin_reg_model, newdata = new_data, interval = "confidence", level = 0.95)
+print("Confidence Interval for an Individual Response:")
+print(individual_ci)
+```
+As show above, the confidence interval for an individual response variable with the explanatory variable being 2500 ranges between 505.89 total bedrooms and 533.684 total bedrooms at a 95% confidence interval. This means that if we are to select a block with exactly 2500 total rooms, we will have a 95% confidence that there are between 505 and 534 bedrooms. This can be visually validated by looking at the density of observations in Figure 1 and where the values of x = 2500 correspond to on the Y axis. 
+
+Lastly, it is important to discuss how we interpret $R^2$ in our data. Because of the summary of our linear regression model from earlier, we know that the $R^2$ equals:
+```{r rsqr, echo=FALSE}
+summary(lin_reg_model)$r.squared
+```
+As $R^2$ ranges from 0-1, the higher the number, the greater the correlation in the data. Because our value is 0.82351, it is highly likely that our explanatory variable is linearly influential on our response variable. Also, as figure 2 outlines, the residuals seem to represent a constant variance at lower levels of the predicted values, and gradually gain variance as the values increase. In essence, this means that other factors begin to influence the relationship of total bedrooms and total rooms as the number of rooms overall increases, suggesting that the relationship may not be entirely linear. 
+
+## Conclusion
+From our brief analysis, we have come to the assumption that there is seemingly a positive linear correlation between the total number of rooms and the total number of bedrooms within an average California housing block when considering an error smaller than 5%. From the data, we concluded that when the explanatory variable, total rooms, increases by 1 unit, the response variable, total bedrooms, increases by 0.18428. In the same manner, we found that the explanatory variable can explain 82.35% of the inflection upon the response variable. In sum, these factors mean that $x$ is significantly influential on $Y$, and we can reject the null hypothesis of $\beta_1 = 0$. We also found that the 95% confidence interval for coefficient of $x$ to be between 0.17675 and 0.19180, validating our rejection of the null hypothesis. In conclusion, we have deemed that the total number of rooms is a sufficient predictor for determining how many total bedrooms houses within a block will have, as they maintain many attributes of a linear correlation.
+
