@@ -4,6 +4,8 @@
 [Project Step 2](#Project-Step-2) <br>
 [Project Step 3](#Project-Step-3) <br>
 [Project Step 4](#Project-Step-4) <br>
+
+<br>
 <br>
 
 ## Project Step 1
@@ -172,6 +174,7 @@ demonstrate a linear progression of increasing value. Seemingly, as the
 median income of a particular housing block increases, so does the
 median house value.
 
+<br>
 <br>
 
 ## Project Step 2
@@ -355,6 +358,7 @@ we have deemed that the total number of rooms is a sufficient predictor
 for determining how many total bedrooms houses within a block will have,
 as they maintain many attributes of a linear correlation.
 
+<br>
 <br>
 
 ## Project Step 3
@@ -652,6 +656,7 @@ explanatory variables and the response variables, insinuating that as
 the amount of households, bedrooms, and rooms increase, the overall
 population is quite likily to increase as well.
 
+<br>
 <br>
 
 ## Project Step 4
