@@ -1,6 +1,6 @@
 # California House Pricing Data
 
-[Project Step 1](#Project-Step-1), [Project Step 2](#Project-Step-2), [Project Step 3](#Project-Step-3), [Project Step 4](#Project-Step-4) <br>
+[Project Step 1](#Project-Step-1) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [Project Step 2](#Project-Step-2) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [Project Step 3](#Project-Step-3) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [Project Step 4](#Project-Step-4)
 
 <br>
 <br>
