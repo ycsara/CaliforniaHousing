@@ -156,7 +156,9 @@ similarly left skewed distributions does not mean that they pertain any
 relationship. In order to dive a little bit deeper into these two
 statistics, we can graph a scatter plot in R that demonstrates their
 potential correlation which can be further refined later down the road.
+
 <img src="Part1_files/figure-gfm/unnamed-chunk-1-1.png" style="display: block; margin: auto;" />
+
 When layed out in a scatter plot as done above, these two variables
 demonstrate a linear progression of increasing value. Seemingly, as the
 median income of a particular housing block increases, so does the
