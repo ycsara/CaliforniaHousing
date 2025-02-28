@@ -421,7 +421,9 @@ which we can nickname the “Full Variable Model” because it contains all
 the variables that we were initially give. This regression model will
 follow the formula given below:
 
-$Y = \text{Population} = \beta_0 + \beta_1(\text{total\_rooms}) + \beta_2(\text{total\_bedrooms}) + \beta_3(\text{households}) + \beta_4(\text{median\_house\_value}) + \beta_5(\text{median\_income}) + \beta_6(\text{housing\_median\_age}) + \epsilon$
+$$
+Y = \text{Population} = \beta_0 + \beta_1(\text{total\_rooms}) + \beta_2(\text{total\_bedrooms}) + \beta_3(\text{households}) + \beta_4(\text{median\_house\_value}) + \beta_5(\text{median\_income}) + \beta_6(\text{housing\_median\_age}) + \epsilon
+$$
 
 So, our goal is to determine if this model is an accurate representation
 of the relationship between the variables inputted to the model and the
