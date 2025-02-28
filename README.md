@@ -1,6 +1,8 @@
 # California House Pricing Data
 
-[Project Step 1](#Project-Step-1) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [Project Step 2](#Project-Step-2) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [Project Step 3](#Project-Step-3) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [Project Step 4](#Project-Step-4)
+The California Housing census data from 1990 provided by Kaggle provides a plethora of information statistics about the housing of citizens across the state. The data is divided through a manner that encapsulates overall information in each observation as one housing block. A key element of this data that is of up most importance is information about population. This information is relevant as it can be a critical influencing point for social and political movements. To illustrate some examples of it’s importance, population of a block can motivate how public transportation systems are arranged to function in the optimal way, it can help businesses predict their customer base as well as their expected revenue from those customers, and population data is significantly influential in drawing political bordering in a nondiscriminatory manner. Needless to say, being able to predict and estimate population values is quite prudent. For that reason, we analyzed the census data in order to determine how other variables of housing statistics can come together and help predict population metrics.
+
+[Project Step 1](#Project-Step-1) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [Project Step 2](#Project-Step-2) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [Project Step 3](#Project-Step-3) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [Project Step 4](#Project-Step-4)
 
 <br>
 <br>
