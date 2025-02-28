@@ -448,7 +448,7 @@ we can nickname the “Countable Variables Model” because it’s composition
 of easily countable whole values:
 
 $$
-Y = \text{Population} = \beta_0 + \beta_1(\text{total\_rooms}) + \beta_2(\text{total\_bedrooms}) + \beta_3(\text{households}) + \epsilon
+Y = \text{Population} = \beta_0 + \beta_1(\text{total rooms}) + \beta_2(\text{total bedrooms}) + \beta_3(\text{households}) + \epsilon
 $$
 
 Because the ggpair() function shows an apparent visual positive linear
@@ -501,7 +501,7 @@ interaction between two variables, total_bedrooms and number of
 households based on their interactions as follows:
 
 $$
-\text{Population} = \beta_0 + \beta_1(\text{total\_bedrooms}) + \beta_2(\text{households}) + \beta_3\left(\frac{\text{households}}{\text{bedrooms}}\right) + \epsilon
+\text{Population} = \beta_0 + \beta_1(\text{total bedrooms}) + \beta_2(\text{households}) + \beta_3\left(\frac{\text{households}}{\text{bedrooms}}\right) + \epsilon
 $$
 
 This formula produces a regression model with a similar response
