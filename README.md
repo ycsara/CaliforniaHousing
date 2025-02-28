@@ -181,9 +181,11 @@ association is linear.
 
 To begin the analysis of the data, we must take take a look at the
 formula for simple linear regression:
+
 $$
 Y = \beta_0 + \beta_1x + \epsilon
 $$
+
 In this model, $Y$ represents the
 response variable which is the total number of bedrooms. $x$ represents
 the explanatory variable which is the total number of rooms. $\beta_0$
