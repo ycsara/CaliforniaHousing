@@ -15,6 +15,8 @@ library(ggplot2)
 library(dplyr)
 library(GGally)
 library(broom)
+library(glmnet)
+options(scipen = 10)
 ```
 
 ## Descriptor  
@@ -22,13 +24,17 @@ library(broom)
 The California House Pricing Dataset from Kaggle encapsulates a snapshot of houses within specific Californian blocks as recorded during the 1990 census. The dataset encompasses a range of attributes that define these housing units. In this step of our analysis, we will be attempting to further dissect our multiple linear model that we previously built by applying shrinkage methods to our model. In multiple linear regression, the purpose of the techniques of specific shrinkage methods is to counteract the inaccuracies of multicollinearity and model overfitting. In order to accomplish this, we will randomly sample 500 observations from the data and fit them to our model and execute ridge regression and LASSO regression techniques to better fit our multiple linear model. 
 
 ```{r initilization, echo=FALSE}
-complete_housing_dataset<-read_csv('C:/Users/orion/Documents/PSTAT126/housing.csv', show_col_types = FALSE)
+complete_housing_dataset<-read_csv('/Users/sarachong/CaliforniaHousing/housing.csv', show_col_types = FALSE)
 set.seed(10)
 hdr<- sample(1:nrow(complete_housing_dataset), 500, replace=FALSE)
 data_sample <- complete_housing_dataset[hdr,]
 data_sample <- data_sample[complete.cases(data_sample), ]
 ```
 
+
+## Shrinkage Methods
+
+The first step of our dissection of our previously drawn up model is to compare it to a model without any modifications. Therefore, the following output is the summary of a linear regression model with all numerical variables as the predictors.
 ```{r first_step, echo=FALSE, comment= NULL}
 lmod <- lm(population ~ housing_median_age + total_rooms + total_bedrooms + households + median_income + median_house_value, data = data_sample)
 # Coefficients
@@ -38,105 +44,164 @@ cat("R^2 of the basic model:",summary(lmod)$r.squared )
 
 ```
 
+Now that we know these values, we can utilize them to compare and contrast the model we developed in the last part, as well as perhaps create a new model that aims to provide even greater accuracy than before. To do this, we can take our basic model and check the eigen decomposition of $x^Tx$, which returns the following:
 
-```{r eigen_decomp, echo=TRUE, comment = NULL}
+```{r eigen_decomp, echo=FALSE, comment = NULL}
 x <- model.matrix(lmod)[,-1]
 lambda <- eigen(crossprod(x))$val;
-sqrt(lambda[1]/lambda)
-
+cat("Eigen decomposition: ",sqrt(lambda[1]/lambda))
+```
+\newpage
+From this, we can calculate the R$^2$ value for each of our predictor variables. This will tell us efficinecy of using our each of these predictors in our model.
+```{r r_squared_predictors, echo=FALSE, comment = NULL}
 # Calculating R^2 for all the predictors
 r2<-rep(0,dim(x)[2])
-for(k in 1:(length(r2))){r2[k]<-summary(lm(x[,k] ~ x[,-k]))$r.squared};r2
+for(k in 1:(length(r2))){r2[k]<-summary(lm(x[,k] ~ x[,-k]))$r.squared}
+cat("R-squared for each predictor: ")
+cat("housing_median_age:", r2[1], "              total_rooms:", r2[2])
+cat("total_bedrooms:", r2[3],"                   households:", r2[4])
+cat("median_income:", r2[5], "                   median_house_value:", r2[6])
+
 ```
-Now check for the variance inflation factors:
-```{r var_inflation_factors, echo = TRUE, comment = NULL}
+
+As shown above, three of our variables have a very high coefficients of determination, two have coefficients of determination that are roughly average, while one has a coefficient that is relatively low. Because the first three, total_bedrooms, total_rooms, and households, all have such a high value, they are succinct to be in our model. Now on the other hand, the inclusion of the three variables with lower coefficients of determination means that either they are likely poor(er) predictors of the response variable, population. Now, we can take a look at the variance inflation factors to see how they contribute to each predictors variance within the linear model.
+```{r var_inflation_factors, echo = FALSE, comment = NULL}
 vif(x)
-#Removing highly correlated variables
-lmod_2 <- lm(population ~ total_rooms + total_bedrooms + households, data = data_sample)
-cat("R-Squared of the new model:", summary(lmod_2)$r.squared)
 ```
+
+From these results, the question arises as to why a model that includes worse predictors of the response variable has a higher coefficient of determination value than one that does not. As in page two of step 3, we recall that the R$^2 = 0.88593$ for the model we settled on, while this one was R$^2= 0.8950722$. Well, this can be caused by noise of variance that the model doesn't account for, or simply put the model is more accurate with these variables included. To dissolve the answer to this question, we can look to two methods of shrinkage to highlight the best model we can for our data.
 
 ## Ridge Regression
 
-The main assumption of ridge regression is that after normalization, the regression coefficients should not be too large. 
+Under the technique of ridge regression, the assumption is that the regression coefficients shouldn't be too large after normalization. The first step we must take is create multiple models with different lambda values, then find the one that minimizes the inaccuracies of the response. Essentially, we are formulating new models with a range of lambda values in order to generate a new linear model with the best fit for the data. Once we have this, we will plug in our best lambda value into the ridge regression model in order to get an accurate model.
+
+The range of these lambda values are given in the figure on the following page, Figure 1 which plots Lambda values versus $\hat{\beta}$.
+
+From that graph and further calculation, we can come to the conclusion that the lambda value of,
 
 
 ```{r RR, echo=FALSE, comment = NULL, message = FALSE}
 require(MASS)
-par(mar = c(2,2,0.5,0.5))
-data_sample_2 <- data_sample[,c("population","housing_median_age","total_rooms","total_bedrooms","households", "median_income","median_house_value")]
-data_sample_2 <- scale((data_sample_2), center = TRUE, scale = FALSE)
-data_sample_2 <- as.data.frame(data_sample_2)
-rg_mod <- lm.ridge(population ~ housing_median_age + total_rooms + total_bedrooms + households + median_income + median_house_value, data=data_sample_2, lambda = seq(0,100, len =100))
+data_sample2<-data_sample[,c("population","housing_median_age","total_rooms","total_bedrooms","households", "median_income","median_house_value")]
+data_sample3 <- data_sample2
+rg_mod <- lm.ridge(population ~ housing_median_age + total_rooms + total_bedrooms + households + median_income + median_house_value, data=data_sample3, lambda = seq(0,100, len =100))
+x<-model.matrix(population ~ ., data_sample2)[,-1]
+y<-data_sample2$population
+cv_rr <- cv.glmnet(x,y,alpha =0)
+best_lambda_rr<-cv_rr$lambda.min
+cat("Best Lambda Value:",best_lambda_rr)
+rr_model <-glmnet(x,y, alpha = 0, lambda =1)
 ```
-
-```{r graph, echo = FALSE, out.width="100%", fig.align="center", fig.show='hold', fig.cap="Figure Demonstrating the Lambda versus Beta Hat"}
+is what we will use for our ridge regression model.
+```{r graph, echo = FALSE, out.width="50%", fig.align="center", fig.show='hold', fig.cap="Figure Demonstrating the Lambda versus Beta Hat"}
 matplot(rg_mod$lambda, coef(rg_mod), type='l', xlab='Lambda',ylab='Beta Hat', cex = 0.8)
 ```
 
+\newpage
+
+Additionally, we can take the produced ridge regression model and find the generalized crossvalidation value. As shown below, the output values of 0.0 and 1 from the analysis indicate that the first element minimizes the Generalized Cross-Validation criterion. Because of this, selecting our lambda value to be 0.0 would be a worthwhile choice for our Ridge Regression model as the low GCV criterion demonstrates that the model's complexity and fit are justifiably balanced. From this output, we can safely assume that our ridge regression model provides an adequate prediction for our data as a whole. 
 
 ```{r gen_cross, echo=FALSE, comment = NULL}
-# Generalized crossvalidation
+#Generalized crossvalidation
 a <- which.min(rg_mod$GCV);
-cat('Generalized crossvalidation value: ', a)
+cat('Generalized crossvalidation value: ')
+a
 ```
 
+To be succinct, listed below is the scaled coefficients of the intercept as well as each variable with the model given by the ridge regression model, along side the R-squared of the model. 
 
-```{r, coef_rgmod, echo=FALSE, comment = NULL}
-RR_coef<-sprintf("%.2e", coef(rg_mod)[a,])
-cat("Intercept:", RR_coef[1])
-cat("housing_median_age:", RR_coef[2])
-cat("total_rooms:", RR_coef[3])
-cat("total_bedrooms:", RR_coef[4])
-cat("households:", RR_coef[5])
-cat("median_income:", RR_coef[6])
-cat("median_house_value:", RR_coef[7])
-
-
+```{r coef_rgmod, echo=FALSE, comment = NULL}
+coef(rr_model)
 ```
+
+Leaving us with the regression model following the form:
+$$population = 187.11 + 2.808x_1 + 0.175x_2 - 1.250x_3 + 3.008x_4+8.88x_5 - 0.0009x_6$$
+where $x_1$ is housing_median_age, $x_2$ is total_rooms, $x_3$ is total_bedrooms, $x_4$ is households, $x_5$ is median_income, $x_6$ is median_house_value.
 
 ## Lasso Regression
 
+While Ridge Regression created a new model to adjust for the overfitting of our data, we can also use another technique known as Lasso regression to create another model we can compare against. Like with Ridge Regression, the first step in creating this model is to isolate the best lambda for the fit of our data. To do this, we can input our data into the cv.glmnet function, followed by using that model and finding the minimuim lambda value for our data.
+
 ```{r LASSO, echo = FALSE, comment = NULL, warning=FALSE, message = FALSE}
 require(glmnet)
-data_sample_3 <- data_sample[,c("population","housing_median_age","total_rooms","total_bedrooms","households", "median_income","median_house_value")]
-y <- data_sample_3$population
-x <- scale(data.matrix(data_sample_3[,-1]))
-cv_model <- cv.glmnet(x,y,alpha = 1)
-best_lambda <- cv_model$lambda.min
-cat("Best Lambda for our Models:", best_lambda)
+cv_lasso <- cv.glmnet(x,y,alpha = 1)
+best_lambda_lasso <- cv_lasso$lambda.min
+cat("Best Lambda for our Models:", best_lambda_lasso)
+```
+As shown above, the lambda value for this model is 0.5248, which is what we will use when we predict the observations given a set of predictions. Given below is graph of log($\lambda$) versus the Mean Squared Error of our data. This plot essentially tells us the most appropriate level of regularization for a predictive model. The best lambda value given above, can be found plotted in the figure below suggesting to us where the balance of the model is most even.
+
+```{r MSEvLOGLAMBDA, echo = FALSE, out.width="50%", fig.align="center", fig.show='hold', fig.cap="Figure Demonstrating the Log of each Lambda versus MSE"}
+par(mar = c(7,4,2.2,0.5));plot(cv_lasso, cex=0.8)
 ```
 
 
-```{r MSEvLOGLAMBDA, echo = FALSE, out.width="45%", fig.align="center", fig.show='hold', fig.cap="Figure Demonstrating the Log of each Lambda versus MSE"}
-par(mar = c(7,4,2.2,0.5));plot(cv_model, cex=0.8)
-```
+Likewise with this model, we are given the intercept and coefficients of our model, as shown below.
 
 ```{r coeff_best, echo = FALSE, comment = NULL, warning=FALSE, message=FALSE}
 # Outputting the coefficients of the best model using the best lambda.
-best_model <- glmnet(x,y,alpha =1, lambda = best_lambda)
+lasso_model <- glmnet(x,y, alpha = 1, lambda = best_lambda_lasso)
 cat('Best Model Coefficients:')
-coef(best_model)
+coef(lasso_model)
 ```
 
-```{r scaled_obs, comment = NULL}
-# Outputting the prediction of an population estimate using scaled explanatory variables
-new = matrix(c(.2,.04,.4,.4,-.3,4), nrow=1, ncol=6)
-cat("Predicted value of Population given the scaled variable values above:",predict(best_model, s=best_lambda, newx=new))
+A brief analysis of these coefficients tells us that median_house_value and total_rooms are the variables that have the least influence per unit change on the response due to their low values, while housing_median_age, households, and median_income have the most influence per unit change. This is quite an interesting statistic because housing_median_age and median_income were variables with lower correlation than many of the other predictors. This can indicate that while they do not have the biggest correlation with the explanatory variable, population, when their influence is apparent, it is considerably large. 
+
+As with Ridge Regression, we can deduce the formula for the Lasso Regression model as the following:
+
+$$population = 192.11 + 2.668x_1 + 0.175x_2 - 1.282x_3 + 3.045x_4+ 7.67x_5 - 0.0009x_6$$
+where $x_1$ is housing_median_age, $x_2$ is total_rooms, $x_3$ is total_bedrooms, $x_4$ is households, $x_5$ is median_income, $x_6$ is median_house_value.
+
+
+## Model Comparison
+
+Lastly, we can take a look and see how these models compare against one another. 
+In order to do this, we can plot them together. 
+
+```{r plot, echo= FALSE, comment = NULL, out.width="50%", fig.align="center", fig.show='hold', fig.cap="Comparison of Models: MLR, RR, and LASSO", warning=FALSE}
+
+MLR_pred<-predict(lmod, newdata=data_sample)
+RR_pred<- predict(rr_model, s = best_lambda_rr, newx = x)
+LASSO_pred<- predict(lasso_model, s = best_lambda_lasso, newx=x)
+
+plot_data <- data.frame(
+  observed = data_sample$population,
+  MLR = MLR_pred,
+  RR = RR_pred,
+  LASSO = LASSO_pred
+)
+# Create the scatter plot with the color legend
+ggplot(plot_data, aes(x = observed)) +
+  geom_point(aes(y = MLR, color = "MLR")) +
+  geom_point(aes(y = s1, color = "RR")) +
+  geom_point(aes(y = s1.1, color = "LASSO")) +
+  labs(title = "Comparison of Regression Models", x = "Observed Population", y = "Predicted Population") +
+  theme_minimal() +
+  scale_x_continuous(limits = c(0, 3000)) +
+  scale_y_continuous(limits = c(0, 3000)) +
+  scale_color_manual(values = c("MLR" = "blue", "RR" = "red", "LASSO" = "green"), 
+                     name = "Models",
+                     labels = c("MLR", "RR", "LASSO"))
 
 ```
 
-**Innovation**
+It is important to note that the scatter plot above excludes multiple observations with values above 3000 on both the x-axis and y-axis. This is done to illustrate the scatter of data points better in the lower regime of values. With that in mind, we can delineate from the scatter plot above that each model seems to be very close in predicting values relatively to one another. No model in particular seems to have a greater skew than another, as nearly all the data points are very similar to each other. This is interesting as it can give us insight into the accuracies of our models and how sufficient they are at predicting our response variable. 
+
+## Conclusion
+
+The three models that we formulated in this data step all seemed to accurately represent the data with consistency. It is of interesting note just how similar the models were to one another. While coefficients of each linear model is different, their differentiation is quite minimal. Ultimately, the shrinkage models add onto the analysis through the multiple linear regression model by combatting any unobserved inaccuracies of multicollinearity and model overfitting. In conjuncture with each other, these models validate that we have assembled strong evidence that our formulate basic multiple linear regression model is a sufficient predictor for the variable of population with the California 1990 census data set. Ultimately, we believe that we can confidently use any of these linear models in order to make estimates about our data and accurately make predictions for future estimations. 
+
+
+## **Innovation**
 
 We chose to use the Box-Cox Method for Transformations because we noticed that the variables in Step 1 and 2 were very skewed and with many outliers. For example, as shown below, a histogram displaying the median income for one to buy a house shows most of the data at the left of the x-axis. By making using this method, we can make the non-normal data into a normal distribution.
 
 ```{r, include = FALSE, out.width="45%", fig.align="center"}
 library(MASS)
 library(readr)
-complete_housing_dataset<-read_csv('/Users/sarachong/Desktop/housing.csv', show_col_types = FALSE)
+complete_housing_dataset<-read_csv('/Users/sarachong/CaliforniaHousing/housing.csv', show_col_types = FALSE)
 ```
 
-```{r, echo=FALSE, out.width="40%", fig.align="center", fig.show='hold'}
+```{r, echo=FALSE, out.width="40%", fig.align="center", fig.show='hold', comment=NULL}
 hist(complete_housing_dataset$median_income, main="Histogram of Median Income", xlab="Median Income")
 bcTransform <- boxcox(as.numeric(complete_housing_dataset$median_income)~
                         as.numeric(1:length(complete_housing_dataset$median_income)))
@@ -146,16 +211,16 @@ Here we show the box cox transformation of the variable. We can see that there i
 
 $$Y_t = \frac{1}{\lambda}(X^\lambda_t - 1)$$
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, comment = NULL}
 cat("Lambda Parameter: ", bcTransform$x[which(bcTransform$y == max(bcTransform$y))])
 ```
 
-```{r, echo=FALSE, out.width="40%", fig.align="center", fig.show='hold'}
+```{r, echo=FALSE, out.width="40%", fig.align="center", fig.show='hold', comment = NULL}
 lambda <- bcTransform$x[which(bcTransform$y == max(bcTransform$y))] 
 bc <- (1/lambda) * (complete_housing_dataset$median_income^lambda - 1)
 hist(bc, main = "Box-Cox Transformed Histogram")
 ```
-```{r, echo=FALSE}
+```{r, echo=FALSE, comment = NULL}
 cat("Variance Before Transformation: ", var(complete_housing_dataset$median_income))
 cat("Variance After Transformation: ", var(bc))
 ```

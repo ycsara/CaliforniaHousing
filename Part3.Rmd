@@ -1,7 +1,7 @@
 ---
 title: "Project Step 3"
-author: Sara Chong
-output: md_document
+author: "Sara Chong"
+output: github_document
 ---
 
 ```{r setup, include=FALSE}
@@ -15,113 +15,181 @@ library(ggplot2)
 library(dplyr)
 library(GGally)
 library(broom)
+options(scipen = 999)
 ```
 
 ## Descriptor  
 
-The California House Pricing Dataset from Kaggle encapsulates a snapshot of houses within specific Californian blocks as recorded during the 1990 census. The dataset encompasses a range of attributes that define these housing units. In this step of our analysis, we will be attempting to further dissect our multiple linear model that we previously built by applying shrinkage methods to our model. In multiple linear regression, the purpose of the techniques of specific shrinkage methods is to counteract the inaccuracies of multicollinearity and model overfitting. In order to accomplish this, we will randomly sample 500 observations from the data and fit them to our model and execute ridge regression and LASSO regression techniques to better fit our multiple linear model. 
+The California House Pricing Dataset from Kaggle encapsulates a snapshot of houses within specific Californian blocks as recorded during the 1990 census. The dataset encompasses a range of attributes that define these housing units. In this step of our analysis, we will be attempting to construct a multivariate linear model that can help us analyze trends and correlations between variables within the dataset. Last time we looked at the association between the total number of rooms within a housing block and the total number of bedrooms to see if that association was linear. In our conclusion from the last step of the project, we determined that it was highly likely that a linear association did exist between these variables, and we are now aiming to expand upon these finding to discover a newer multiple linear regression model that further our understanding of the data provided by the 1990 California Housing census. 
+
+## Choice of Response Variable
+
+After discovering the existence of a linear trend between the variables for total rooms and total bedrooms, we decided to seek a further understanding of how these and other variables influence the total population for a given block. Therefore, we explicitly chose Population as the response variable that we seek to formulate a linear model around. Dissection of the trends behind this variable is important because it can potentially demonstrate societal trends, be a guidance for taxation/funding/residential distribution, and many more factors that are influenced by the census data. 
 
 ```{r initilization, echo=FALSE}
-complete_housing_dataset<-read_csv('housing.csv', show_col_types = FALSE)
+complete_housing_dataset<-read_csv('/Users/sarachong/CaliforniaHousing/housing.csv', show_col_types = FALSE)
 set.seed(10)
 hdr<- sample(1:nrow(complete_housing_dataset), 500, replace=FALSE)
 data_sample <- complete_housing_dataset[hdr,]
-data_sample <- data_sample[complete.cases(data_sample), ]
 ```
 
-```{r first_step, echo=FALSE, comment= NULL}
-lmod <- lm(population ~ housing_median_age + total_rooms + total_bedrooms + households + median_income + median_house_value, data = data_sample)
-# Coefficients
-summary(lmod)$coefficients
-# R.squared
-cat("R^2 of the basic model:",summary(lmod)$r.squared )
-
-```
-
-
-```{r eigen_decomp, echo=TRUE, comment = NULL}
-x <- model.matrix(lmod)[,-1]
-lambda <- eigen(crossprod(x))$val;
-sqrt(lambda[1]/lambda)
-
-# Calculating R^2 for all the predictors
-r2<-rep(0,dim(x)[2])
-for(k in 1:(length(r2))){r2[k]<-summary(lm(x[,k] ~ x[,-k]))$r.squared};r2
-```
-Now check for the variance inflation factors:
-```{r var_inflation_factors, echo = TRUE, comment = NULL}
-vif(x)
-#Removing highly correlated variables
-lmod_2 <- lm(population ~ total_rooms + total_bedrooms + households, data = data_sample)
-cat("R-Squared of the new model:", summary(lmod_2)$r.squared)
-```
-
-## Ridge Regression
-
-The main assumption of ridge regression is that after normalization, the regression coefficients should not be too large. 
-
-
-```{r RR, echo=FALSE, comment = NULL, message = FALSE}
-require(MASS)
-par(mar = c(2,2,0.5,0.5))
-data_sample_2 <- data_sample[,c("population","housing_median_age","total_rooms","total_bedrooms","households", "median_income","median_house_value")]
-data_sample_2 <- scale((data_sample_2), center = TRUE, scale = FALSE)
-data_sample_2 <- as.data.frame(data_sample_2)
-rg_mod <- lm.ridge(population ~ housing_median_age + total_rooms + total_bedrooms + households + median_income + median_house_value, data=data_sample_2, lambda = seq(0,100, len =100))
-```
-
-```{r graph, echo = FALSE, out.width="100%", fig.align="center", fig.show='hold', fig.cap="Figure Demonstrating the Lambda versus Beta Hat"}
-matplot(rg_mod$lambda, coef(rg_mod), type='l', xlab='Lambda',ylab='Beta Hat', cex = 0.8)
-```
-
-
-```{r gen_cross, echo=FALSE, comment = NULL}
-# Generalized crossvalidation
-a <- which.min(rg_mod$GCV);
-cat('Generalized crossvalidation value: ', a)
-```
-
-
-```{r, coef_rgmod, echo=FALSE, comment = NULL}
-RR_coef<-sprintf("%.2e", coef(rg_mod)[a,])
-cat("Intercept:", RR_coef[1])
-cat("housing_median_age:", RR_coef[2])
-cat("total_rooms:", RR_coef[3])
-cat("total_bedrooms:", RR_coef[4])
-cat("households:", RR_coef[5])
-cat("median_income:", RR_coef[6])
-cat("median_house_value:", RR_coef[7])
-
+```{r GGPAIR, echo=FALSE, message=FALSE, warning=FALSE, out.width="50%", fig.align='center',fig.cap ='Output of the ggpair() Function from the California 1990 Census Data'}
+fit_var<-c("population","total_rooms","total_bedrooms","households","median_house_value","median_income","housing_median_age")
+print(ggpairs(data_sample[fit_var]))
+# Seems as if the variables of population, total rooms, total bedrooms, and households look very likely to have
+# a linear association based simply off of viewing the ggpairs() plot, meanwhile other variables such as median_income, median_house_value, and housing_median_age seem to not strictly have a linear relationship.
 
 ```
 
-## Lasso Regression
+## Determing the Variables of a Model
 
-```{r LASSO, echo = FALSE, comment = NULL, warning=FALSE, message = FALSE}
-require(glmnet)
-data_sample_3 <- data_sample[,c("population","housing_median_age","total_rooms","total_bedrooms","households", "median_income","median_house_value")]
-y <- data_sample_3$population
-x <- scale(data.matrix(data_sample_3[,-1]))
-cv_model <- cv.glmnet(x,y,alpha = 1)
-best_lambda <- cv_model$lambda.min
-cat("Best Lambda for our Models:", best_lambda)
+First things first, we can take a look at the output from the ggpair() function provided by the GGally library. Selecting certain variables that we are interested in (population, total_rooms, total_bedrooms, households, median_house_value, median_income, and housing_median_age) allows us to see a collection of plots depicting the various associations within each variable pair. From the ggpair() output above, we can see that a seemingly positively linear correlation exists between the response variable and 3 potential explanatory variables: total_rooms, total_bedrooms, and households. This enlightens us that we are on the right path in determining if these factors have any influence on our response variable, population. Meanwhile, the rest of the output shows us that data plotted between population and our other potential explanatory variables have a much more indescribable distribution. Additionally, the correlation coefficient given between the population as the response variable and the additional variables of median_house_value, median_income, and housing_median_age are low enough to disregard any relation that they may have. Therefore, we will try to exclude those three variables for the majority of our analysis and focus solely on total_rooms, total_bedrooms, and households as potential significant explanatory variables. For simplicity's sake, we derive the name "Countable Variables" to total_rooms, total_bedrooms, and households based on the fact that they are finite and countable in order to avoid confusion. 
+
+
+```{r allvar, echo=FALSE, include=FALSE}
+# regression model with all variables above
+allvar<-lm(population ~ total_rooms + total_bedrooms + households + median_house_value + median_income + housing_median_age, data = data_sample)
+summary(allvar)
+```
+
+```{r valvars, echo=FALSE, include=FALSE}
+# regression model of population as response and house value and income as explanatory variables
+valvars<- lm(population ~ median_house_value + median_income, data = data_sample)
+summary(valvars)
+```
+
+```{r countvars, echo=FALSE, include=FALSE}
+# regression model with only counts (rooms, bedrooms, households) as the explanatory variables.
+countvars<-lm(population~ total_rooms + total_bedrooms + households, data = data_sample)
+summary(countvars)
 ```
 
 
-```{r MSEvLOGLAMBDA, echo = FALSE, out.width="45%", fig.align="center", fig.show='hold', fig.cap="Figure Demonstrating the Log of each Lambda versus MSE"}
-par(mar = c(7,4,2.2,0.5));plot(cv_model, cex=0.8)
+```{r countvarsval, echo=FALSE, include=FALSE}
+# regression model with only counts (rooms, bedrooms, households) as the explanatory variables.
+countvarsval<-lm(population~ total_rooms + total_bedrooms + households + median_house_value, data = data_sample)
+summary(countvarsval)
 ```
 
-```{r coeff_best, echo = FALSE, comment = NULL, warning=FALSE, message=FALSE}
-# Outputting the coefficients of the best model using the best lambda.
-best_model <- glmnet(x,y,alpha =1, lambda = best_lambda)
-cat('Best Model Coefficients:')
-coef(best_model)
+```{r interaction, echo=FALSE, include=FALSE}
+# regression model with interaction between households and total bedrooms
+varsint<-lm(population ~ households / total_bedrooms , data = data_sample)
+summary(varsint)
 ```
 
-```{r scaled_obs, comment = NULL}
-# Outputting the prediction of an population estimate using scaled explanatory variables
-new = matrix(c(.2,.04,.4,.4,-.3,4), nrow=1, ncol=6)
-cat("Predicted value of Population given the scaled variable values above:",predict(best_model, s=best_lambda, newx=new))
+```{r householdcount, echo=FALSE, include=FALSE}
+# regression model only bedrooms
+householdcount<-lm(population ~ total_bedrooms, data = data_sample)
+summary(householdcount)
+```
+
+```{r transformations, echo=FALSE, inclued = FALSE}
+trans<-lm(population~ (total_rooms) + (total_bedrooms) + (households), data = data_sample)
+#summary(trans)
+```
+
+## Validating our Variables and Deciding On a Model
+
+To further our findings from the above section, we can create a few regression models to help validate our choice of explanatory variables as well as our intentional exclusion of variables that do not have an association with our response.
+First, we create a basic linear model, which we can nickname the "Full Variable Model" because it contains all the variables that we were initially give. This regression model will follow the formula given below:
+
+**Y = Population = $\beta_0$ + $\beta_1$(total_rooms) + $\beta_2$(total_bedrooms) + $\beta_3$(households) + $\beta_4$(median_house_value) + $\beta_5$(median_income) + $\beta_6$(housing_median_age) + $\epsilon$**
+
+So, our goal is to determine if this model is an accurate representation of the relationship between the variables inputted to the model and the response variable that comes out. Upon a brief first look, we can see that the Full Variable Model contains 2 explanatory variables that have very high p-values, meaning that they do not play a significant role in affecting the outcome of our model. These variables, median_income and housing_median_age, are two of the variables which we hypothesized earlier to not fit into our model due to the lack of an apparent relationship. The p-values in the model summary further conclude this to be the case, and we can be rest assured that their exclusion will not have a dramatic impact on the accuracy of the linear regression model. While all other variables in the model have low p-values, it is important to note that the variable for median_house_value did not suggest any linear relationship between population and house value. In fact, the plots outlined by the ggpairs() plots suggest no relationship at all. Because of this failing the assumption of linearity, and we can exclude it from our data as well. Therefore, we a justified in negating these variables from our linear model and still assuming we have high accuracy. And thus, we are left with the resulting linear model, which we can nickname the "Countable Variables Model" because it's composition of easily countable whole values:
+
+**Y = Population = $\beta_0$ + $\beta_1$(total_rooms) + $\beta_2$(total_bedrooms) + $\beta_3$(households) + $\epsilon$**
+
+Because the ggpair() function shows an apparent visual positive linear correlation from these countable variables, this model may be quite a succinct descriptor for our response variable. Comparing the R squared output of these two models, 
+```{r r_2_out, echo=FALSE, fig.align="center"}
+cat("R Squared For Countable Variables Model:", summary(countvars)$r.squared)
+cat("R Squared For Full Variable Model:", summary(countvarsval)$r.squared)
+```
+tells us that around 88.6% of the variance from the Countable Variable Model can be described by the explanatory variables, while 89.4% can be explained by the explanatory variables in the Full Variable Model. This distinctly is quite interesting, because the model we deemed to be inaccurate has a higher R squared than the model which we ended up with. It is for this reason that we need to analyze consider all of the data's influences when assessing trends, because the correct model ended up with a lower score. Despite this however, an R squared value of 0.8859 in this case leads us to believe the accuracy of the linear model. Additionally, we can check the fitted values versus the residuals to determine if the model has constant variance, outlined by the two following plots.
+
+```{r comparison, echo=FALSE, out.width="35%", fig.align="center", fig.show='hold', fig.cap="Test for Constant Variance within the Countable Variables Model"}
+count_residuals<-residuals(countvars)
+count_fitted<-fitted(countvars)
+plot(count_fitted, count_residuals, main="Plotted Fitted Values Vs Residuals", xlab="Fitted Values", ylab="Residuals")
+qqnorm(count_residuals)
+qqline(count_residuals)
+```
+As shown above, the variance seems constant for smaller values, but a fan shape appears to form as the values of the response mean increase. This leads us to believe that there is greater variance of the response for higher values of the explanatory variables in the data set. After attempting numerous transformations, we seem to conclude that the base model without transformations will provide us with the greatest accuracy. Sacrificing some variance towards the upper percentile of values means that the model can more accurately depict values towards the lower end. For that reason, we have decided to leave the Countable Variable Model without any additional transformations. 
+
+While we have come up with a model that fits our response variable, that does not mean that additional models exist which may provide a greater analysis of the data. For example, we can write a linear model, which we can nickname the "Interaction Model", with the input being the interaction between two variables, total_bedrooms and number of households based on their interactions as follows:
+
+
+**Population = $\beta_0$ + $\beta_1$(total_bedrooms) + $\beta_2$(households) + $\beta_3$(households/bedrooms) + $\epsilon$**
+
+This formula produces a regression model with a similar response variable output, except it depends on the interaction between total_bedrooms over the total number of households. This is an acceptable analysis to make due to the fact that there is seemingly some relationship between these two explanatory variables. The low p-values of the regression model conclude that these variables are indeed significant, and an R squared value of 0.8727 hints that the variables are indeed influential. This is intuitive because the greater the number of bedrooms within a block, the more the households which results in a greater overall population. However, it is important to keep in mind that perhaps there can be a greater number of bedrooms within a household, arbitrarily inflating the the population count. 
+
+While both the Interaction Model and the Countable Variables Model offer decent regression models that provi
+de their own benefits for determining the response variable, ultimately the extremely lower p-values and higher R squared and R squared adjusted values for the Countable Variables Model leads us to pick that as the accepted model for our regression analysis.
+
+## Brief Regression Model Summary
+```{r final_model, echo=FALSE, include=FALSE}
+final_model<-lm(population~ total_rooms + total_bedrooms + households, data = data_sample)
+final_summary<-summary(final_model)
+final_summary
+p_values <- final_summary$coefficients[, "Pr(>|t|)"]
+```
+
+
+In order to help summarize our model for our data, we can formulate our null and alternative hypothesis as:
+$$H_0: \beta_i = 0 \text{ and } H_a: \beta_i \ne 0 \text{ for } i = 0, 1, 2, 3$$
+Meaning that the null hypothesis is not rejected if a coefficient is deemed to be not significant, and the null hypothesis is rejected if a coefficient is deemed to be significant. 
+```{r p_val, echo=FALSE}
+p_values
+```
+Because each of the above p-values is less than $\alpha$ at 0.05, each variable is significant and the null hypothesis is rejected. In our case, the coefficients values for each $\beta_i$ are 126.64, 0.15, -1.28, and 3.13 for $i = 0, 1, 2, 3$ respectively. And as stated before, the corresponding R squared and adjusted R squared values for the Countable Variable Models are as follows:
+```{r r_sqr, echo=FALSE}
+cat("R Squared For Countable Variables Model:", summary(final_model)$r.squared)
+cat("Adjusted R Squared For Countable Variables Model:", summary(final_model)$adj.r.squared)
+```
+Both of these values are high, which is good news for our model! But that does not guarantee their accuracy. Like we stated before, we sacrificed accuracy in the higher values of our models for more accuracy overall. While our constant variance snag that we encountered earlier was not a major factor, it will increase the band of the confidence intervals of our model overall.
+
+## Influence Points Analysis
+```{r influence_analysis, echo=FALSE, fig.align="center", out.width="35%", fig.show='hold', fig.cap = "Inluence Analysis"}
+plot(final_model, which=1)
+plot(final_model, which = 3)
+plot(final_model, which = 4)
+plot(final_model, which = 5)
+influentials<- cooks.distance(final_model) > 4 / length(final_model$residuals)
+#points(final_model$fitted.values[influentials], final_model$residuals[influentials],
+#       col = "red", pch = 16, cex = 1.5)
 
 ```
+The above plots can help us highlight trends within the data that may lead to an influence away from a particular expected response. Data points that fall out of the common variance trend within a data set can have a drastic impact on the accuracy of the model, so taking these steps to conclude where influence and leverage inflection points are is a pivotal step in further understanding our multiple regression model. As shown above in the Cook's Distance plot, there a number of observation within our sample that have a much greater distance away from the expected interval, notably the 43rd, 256th, and 490th observations. Noting the location of these influence points can help deduce where the variance is coming from in the data. Additionally, if we look at the Residuals versus Leverage graph, we can see that there is a large cluster of data points centralized around the lower distances from the interval. This cluster ends at approximately 0.035, meaning that values that go beyond this limit are the beginning of what can be considered a leverage point all the way up till the end at almost 0.20. Overall, adjusting for these leverage and influences points can usually help deduce a more accurate model. In our case however, it seems that the non-constant variance associated with the lack of model transformation is partially at fault for these inaccuracies. Therefore, we feel it is not impotent to completely remove these outliers from the data set in order to receive a more accurate measurement than already predicted through our acceptance of nonconstant variance for our model.
+
+
+```{r, include=FALSE, echo=FALSE}
+residuals<-residuals(final_model)
+leverage<-hatvalues(final_model)
+influentials<- cooks.distance(final_model)
+plot(influentials, main="Cook's Distance")
+high_lvrg <- which(leverage > 2 * mean(leverage))
+plot(leverage, residuals, main="Residuals vs. Leverage")
+plot(leverage, residuals)
+high_infl<- which(influentials > 4 /length(residuals))
+data_sample<-na.omit(data_sample)
+final_model_omitted <- lm(population ~ total_rooms + total_bedrooms + households, data = data_sample[-high_infl, ])
+summary(final_model_omitted)
+```
+
+
+## Confidence Intervals for Predicted Values
+
+```{r prediction, echo=FALSE}
+prediction_data<- data.frame(total_rooms = 1500, total_bedrooms = 200, households = 200)
+
+predicted_mean <- predict(final_model, newdata = prediction_data, interval = 'confidence', level = 0.95 )
+cat("Predicted Mean and it's Confidence Interval")
+predicted_mean
+future<- predict(final_model, newdata = prediction_data, interval = 'prediction', level = 0.95 )
+cat("Future Predicted Value and it's Prediction Interval")
+future
+```
+As shown above, we can calculate a given predicted mean and future predicted value along side their respective confidence interval when given initial conditions. If we take our predictor variables for total_rooms to equal 1500, total bedrooms to equal 200, and households to equal 200, we get the information state above about the expected response variable. As shown, the 95% confidence interval for the predicted mean is between 678.8 and 767.8 given those conditions with the expected mean being 723.3. Likewise, if we calculate the future predicted value given those constraints, the lower bound is approximately 20.0 with an upper bound of 1426.6 at a confidence interval of 95%, which is suspiciously large. Similarly to the predicted mean, the future predicted value is the same at 723.3. Ultimately, we can see that our model is not the most accurate when it comes to the prediction interval of the response variable, which is mostly based out of the high input numbers which is greatly effected by the non constant variance as shown above.
+
+## Conclusion
+
+The multi-variable linear regression model that we formulated from the California 1990 Housing Census takes into account basic housing and household variables in an attempt to find the response variable estimating the total population within a housing block. While the association between the data is linear, the existence of nonconstant variance in higher values within the data set leads to some inaccurate predictions using the formulated model. Overall, however, the model seems to produce roughly accurate results that may provide a greater insight into predicting the total population within a block based merely off the construction of the buildings that reside in that block. The regression model presents a positive, linear correlation between the explanatory variables and the response variables, insinuating that as the amount of households, bedrooms, and rooms increase, the overall population is quite likily to increase as well. 

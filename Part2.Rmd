@@ -28,7 +28,7 @@ Now, we must begin to test our data to see if it follows the four assumptions fo
 \newpage
 
 ```{r initilization, echo=FALSE}
-complete_housing_dataset<-read_csv('housing.csv', show_col_types = FALSE)
+complete_housing_dataset<-read_csv('/Users/sarachong/CaliforniaHousing/housing.csv', show_col_types = FALSE)
 set.seed(1)
 hdr<- sample(1:nrow(complete_housing_dataset), 500, replace=FALSE)
 data_sample <- complete_housing_dataset[hdr,]
