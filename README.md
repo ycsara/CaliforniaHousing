@@ -49,6 +49,7 @@ learn more about how the values of this element are structured;
 therefore, the distribution plot of the variable is included below.
 
 <img src="Part1_files/figure-gfm/value_summary-1.png" style="display: block; margin: auto auto auto 0;" />
+
 From this plot of the distribution of median house value, it can be
 concluded that the data is heavily left skewed meaning that there is a
 larger percentile of homes within the \$0 to \$250,000 price range. This
@@ -98,7 +99,9 @@ a the possible existence of a relationship between the variable “Median
 House Value” and “Ocean Proximity” to see if we our intuitions are
 justified. The following graph plots Median House Value within each
 block in the sample data set against the block’s proximity to the ocean.
+
 <img src="Part1_files/figure-gfm/keeps-1.png" style="display: block; margin: auto;" />
+
 As the box plot above demonstrates, there seems to be a trend that homes
 within the data sample tend to have an increased property value if they
 are under an hour away from the ocean or a bay in comparison to homes
@@ -119,7 +122,9 @@ therefore, understanding the statistical data around it is quite
 important. Like shown before with the median house value variable,
 utilizing R plot the distribution function for this variable is a good
 place to start.
+
 <img src="Part1_files/figure-gfm/income-1.png" style="display: block; margin: auto auto auto 0;" />
+
 Similarly to the distribution graphs shown earlier, a quick and brief
 analysis of the distribution of Median Income shows that the
 distribution is also heavily skewed to the left. As a result, it
@@ -203,7 +208,7 @@ observe if there is a seemingly linear trend between the data.
 
 <img src="Part2_files/figure-gfm/checks-1.png" alt="Plots the total number of rooms against the total number of bedrooms in a given block in California" width="50%" />
 <p class="caption">
-Plots the total number of rooms against the total number of bedrooms in
+Figure 1: Plots the total number of rooms against the total number of bedrooms in
 a given block in California
 </p>
 
@@ -217,8 +222,10 @@ the data. Next, we can utilize checks to see if the following
 assumptions also apply to our data.
 
 <img src="Part2_files/figure-gfm/constant_variance_errors-1.png" width="50%" /><img src="Part2_files/figure-gfm/constant_variance_errors-2.png" width="50%" />
-**Figure 2:** Predicted Values of Total Bedrooms vs Residuals **Figure
-3:** Q-Q Plot of Normal Errors
+<p class="caption">
+Figure 2: Predicted Values of Total Bedrooms vs Residuals<br>
+Figure 3: Q-Q Plot of Normal Errors
+</p>
 
 Figures 2 plots the predicted values of the response variable against
 the residuals. From this, we can notice how a density band travels in a
@@ -764,7 +771,7 @@ model, along side the R-squared of the model.
     median_house_value  -0.0009831492
 
 Leaving us with the regression model following the form:
-$$population = 187.11 + 2.808x_1 + 0.175x_2 - 1.250x_3 + 3.008x_4+8.88x_5 - 0.0009x_6$$
+$$\text{Population} = 187.11 + 2.808x_1 + 0.175x_2 - 1.250x_3 + 3.008x_4+8.88x_5 - 0.0009x_6$$
 where $x_1$ is housing_median_age, $x_2$ is total_rooms, $x_3$ is
 total_bedrooms, $x_4$ is households, $x_5$ is median_income, $x_6$ is
 median_house_value.
@@ -827,7 +834,7 @@ considerably large.
 As with Ridge Regression, we can deduce the formula for the Lasso
 Regression model as the following:
 
-$$population = 192.11 + 2.668x_1 + 0.175x_2 - 1.282x_3 + 3.045x_4+ 7.67x_5 - 0.0009x_6$$
+$$\text{Population} = 192.11 + 2.668x_1 + 0.175x_2 - 1.282x_3 + 3.045x_4+ 7.67x_5 - 0.0009x_6$$
 where $x_1$ is housing_median_age, $x_2$ is total_rooms, $x_3$ is
 total_bedrooms, $x_4$ is households, $x_5$ is median_income, $x_6$ is
 median_house_value.
