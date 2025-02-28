@@ -422,7 +422,7 @@ the variables that we were initially give. This regression model will
 follow the formula given below:
 
 $$
-Y = \text{Population} = \beta_0 + \beta_1(\text{total\_rooms}) + \beta_2(\text{total\_bedrooms}) + \beta_3(\text{households}) + \beta_4(\text{median\_house\_value}) + \beta_5(\text{median\_income}) + \beta_6(\text{housing\_median\_age}) + \epsilon
+Y = \text{Population} = \beta_0 + \beta_1(\text{total\_{rooms}}) + \beta_2(\text{total\_{bedrooms}}) + \beta_3(\text{households}) + \beta_4(\text{median\_{house}\_{value}}) + \beta_5(\text{median\_{income}}) + \beta_6(\text{housing\_{median}\_{age}}) + \epsilon
 $$
 
 So, our goal is to determine if this model is an accurate representation
