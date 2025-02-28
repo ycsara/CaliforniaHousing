@@ -1,6 +1,13 @@
-# Project Step 1
+# California House Pricing Data
 
-### California House Pricing Data
+[Project Step 1](#Project-Step-1) <br>
+[Project Step 2](#Project-Step-1) <br>
+[Project Step 3](#Project-Step-1) <br>
+[Project Step 4](#Project-Step-1) <br>
+
+## Project Step 1
+
+### Descriptor
 
 The contents of the California House Pricing Dataset represent
 information on houseswithin a given block in California from the 1990
