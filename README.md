@@ -841,7 +841,10 @@ considerably large.
 As with Ridge Regression, we can deduce the formula for the Lasso
 Regression model as the following:
 
-$$\text{Population} = 192.11 + 2.668x_1 + 0.175x_2 - 1.282x_3 + 3.045x_4+ 7.67x_5 - 0.0009x_6$$
+$$
+\text{Population} = 192.11 + 2.668x_1 + 0.175x_2 - 1.282x_3 + 3.045x_4+ 7.67x_5 - 0.0009x_6
+$$
+
 where $x_1$ is housing_median_age, $x_2$ is total_rooms, $x_3$ is
 total_bedrooms, $x_4$ is households, $x_5$ is median_income, $x_6$ is
 median_house_value.
@@ -887,7 +890,7 @@ sufficient predictor for the variable of population with the California
 any of these linear models in order to make estimates about our data and
 accurately make predictions for future estimations.
 
-### **Innovation**
+### Innovation
 
 We chose to use the Box-Cox Method for Transformations because we
 noticed that the variables in Step 1 and 2 were very skewed and with
@@ -905,7 +908,9 @@ parameter lambda hat. As shown below, with the lambda equaling to 0.10,
 we can create a new regression model with the variable, using the
 equation:
 
-$$Y_t = \frac{1}{\lambda}(X^\lambda_t - 1)$$
+$$
+Y_t = \frac{1}{\lambda}(X^\lambda_t - 1)
+$$
 
     Lambda Parameter:  0.1010101
 
