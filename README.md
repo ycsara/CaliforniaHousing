@@ -181,7 +181,9 @@ association is linear.
 
 To begin the analysis of the data, we must take take a look at the
 formula for simple linear regression:
-$$Y = \beta_0 + \beta_1x + \epsilon$$ 
+$$
+Y = \beta_0 + \beta_1x + \epsilon
+$$
 In this model, $Y$ represents the
 response variable which is the total number of bedrooms. $x$ represents
 the explanatory variable which is the total number of rooms. $\beta_0$
@@ -193,6 +195,7 @@ change of the explanatory variable. $\epsilon$ is the error term which
 represents the difference between the actual values and the predicted
 values of the response variable. With this knowledge as a foundation, we
 can formulate our null and rejection hypothesises for our data:
+
 $$
 H_0: \beta_1 = 0 \quad (\text{Total rooms and total bedrooms do not have a linear correlation})
 $$
